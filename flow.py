@@ -2,8 +2,10 @@ import sys
 import zipfile
 import io
 import ast
+import networkx
 from code_analyzer import CodeAnalyzer
 from graph_builder import build_graph
+from graph_analyzer import GraphAnalyzer
 
 def encode_zip(zip_folder_path: str):
     """
@@ -96,6 +98,10 @@ def visualize(project_zip_folder_bytes: bytes):
 
     # Step 2: Build graph with networkx
     project_graph = build_graph(project_data)
+
+    # Step 3: Analyze graph
+    graph_analyzer = GraphAnalyzer(project_graph)
+    analyzed_project_graph = graph_analyzer.analyze_graph()
 
 def train():
     """
