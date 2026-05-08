@@ -2,10 +2,12 @@ import sys
 import zipfile
 import io
 import ast
-import networkx
 from code_analyzer import CodeAnalyzer
 from graph_builder import build_graph
 from graph_analyzer import GraphAnalyzer
+from dataset_builder import DatasetBuilder
+from model_trainer import train_model
+
 
 def encode_zip(zip_folder_path: str):
     """
@@ -62,6 +64,7 @@ def analyze_project_data(project):
             # Visit only created "visit_nodeName" methods
             code_analyzer.visit(file_tree)
 
+
             data[file_name] = {
                 "imports": code_analyzer.imports,
                 "functions": code_analyzer.functions,
@@ -73,12 +76,34 @@ def analyze_project_data(project):
                 "decorators": list(code_analyzer.decorators),
 
                 "base_classes": list(code_analyzer.inherited_classes),
-                "global_variables": list(code_analyzer.global_variables)
+                "global_variables": list(code_analyzer.global_variables),
+                "file_role": guess_file_role(file_name.lower(), code_analyzer)
             }
         except SyntaxError:
             # Skip files with invalid python code
             continue
     return data
+
+def extract_build_analyze(project_zip_folder_bytes: bytes):
+    """
+    Main function for analyzing project by calling relevant function in the right order
+    1- Unzip project and parse its content with ast parser
+    2- Build a graph object using networkx
+    3- Analyze the graph for circular dependencies, entrypoints, and order edges based on import order and depth from entry point
+    """
+    # Step 1: Unzipping project and extracting data using ast
+    project = unzip_project(project_zip_folder_bytes)
+    project_data = analyze_project_data(project)
+
+    # Step 2: Build graph with networkx
+    project_graph = build_graph(project_data)
+
+    # Step 3: Analyze graph
+    graph_analyzer = GraphAnalyzer(project_graph)
+
+    analyzed_project_graph = graph_analyzer.analyze_graph(train=True) if len(sys.argv) > 2 else graph_analyzer.analyze_graph()
+
+    return analyzed_project_graph
 
 def visualize(project_zip_folder_bytes: bytes):
     """
@@ -92,24 +117,40 @@ def visualize(project_zip_folder_bytes: bytes):
     :param: project_zip_folder_bytes:
     :return: a JSON project flow diagram that is ready for drawing/visualizing
     """
-    # Step 1: Unzipping project and extracting data using ast
-    project = unzip_project(project_zip_folder_bytes)
-    project_data = analyze_project_data(project)
+    analyzed_project_graph = extract_build_analyze(project_zip_folder_bytes)
 
-    # Step 2: Build graph with networkx
-    project_graph = build_graph(project_data)
-
-    # Step 3: Analyze graph
-    graph_analyzer = GraphAnalyzer(project_graph)
-    analyzed_project_graph = graph_analyzer.analyze_graph()
+def guess_file_role(file_path: str, analyzer: CodeAnalyzer):
+    """
+    Guess file role based on file_path contents
+    :param: string lowercase file path
+    :param: CodeAnalyzer object
+    :return: string file role
+    """
+    if analyzer.is_entry_point or "manage.py" in file_path or "main.py" in file_path:
+        return "entry_point"
+    elif "test" in file_path:
+        return "test"
+    elif "migrations" in file_path:
+        return "migration"
+    elif "model" in file_path:
+        return "model"
+    elif "view" in file_path or "controller" in file_path or "route" in file_path:
+        return "view"
+    elif "util" in file_path or "helper" in file_path or "config" in file_path:
+        return "utility"
+    else:
+        return "other"
 
 def train():
     """
-    Trains our model with new repositories each time this function is called
-    1- Gather repositories with GitHub API and create a .csv data frame.
-    2- Training the model and save train data in .pickle file
+    - Trains our model with new repositories each time this function is called.
+    - Saves train data in .pickle file.
     """
-    pass
+    dataset_builder = DatasetBuilder(int(sys.argv[2]) if len(sys.argv) > 2 else 20)
+    # pass needed function in build_dataset function as a parameter instead of importing it in dataset_builder.py to avoid circular imports
+    dataset = dataset_builder.build_dataset(extract_build_analyze)
+    train_model(dataset)
+    print("Model trained successfully")
 
 def main():
      if len(sys.argv) > 1:

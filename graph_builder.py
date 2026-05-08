@@ -22,7 +22,7 @@ def build_graph(project_files_data: dict):
     # Add imports as nodes and edges from parent file to its imported nodes
     for python_file, contents in project_files_data.items():
         for content_import, import_type in contents["imports"].items():
-            if import_type in ["external_import","standard_import" ]:
+            if import_type in ["external_import","standard_import"]:
                 if not graph.has_node(content_import):
                     graph.add_node(content_import, type=import_type)
                 graph.add_edge(python_file, content_import)

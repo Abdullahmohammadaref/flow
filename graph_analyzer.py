@@ -6,25 +6,28 @@ class GraphAnalyzer:
         self.execution_order_counter = 1
         self.execution_order_visited_edges = set()
 
-    def analyze_graph(self):
+    def analyze_graph(self, train: bool = False):
         """
         Main method for calling relevant methods in correct order generate an analyzed graph.
         :return: an analyzed networkx graph
         """
 
         entry_nodes = self.detect_entry_points()
-        self.initialize_edges_attributes()
+
+        # Don't analyze edges if we are just building a dataset
+        if not train:
+            self.initialize_edges_attributes()
 
 
-        for entry_node in entry_nodes:
-            self.mark_dependency_order(entry_node)
+            for entry_node in entry_nodes:
+                self.mark_dependency_order(entry_node)
 
 
-        for entry_node in entry_nodes:
-            self.mark_node_execution_order(entry_node)
+            for entry_node in entry_nodes:
+                self.mark_node_execution_order(entry_node)
 
 
-        self.detect_circular_dependencies()
+            self.detect_circular_dependencies()
 
         return self.graph
 
