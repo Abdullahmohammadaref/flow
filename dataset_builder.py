@@ -85,12 +85,26 @@ class DatasetBuilder:
                     files_data.append({
                         "repository_name": repository.full_name,
                         "repository_url": repository.url,
+
                         "number_of_imports": len(node_data["imports"]),
+                        "number_of_external_imports": list(node_data["imports"].values()).count("external_import"),
+                        "number_of_internal_imports": list(node_data["imports"].values()).count("internal_import"),
+                        "number_of_standard_imports": list(node_data["imports"].values()).count("standard_import"),
+                        
                         "number_of_classes": len(node_data["classes"]),
                         "number_of_functions": len(node_data["functions"]),
                         "is_entry_point": node_data["is_entry_point"],
                         "has_wait_state": node_data["has_wait_state"],
                         "number_of_decorators": len(node_data["decorators"]),
+                        "number_of_base_classes": len(node_data.get("base_classes", [])),
+
+                        "has_model_in_path": "model" in node_name.lower(),
+                        "has_view_in_path": "view" in node_name.lower() or "controller" in node_name.lower() or "route" in node_name.lower() or "api" in node_name.lower() or "endpoint" in node_name.lower() or "handler" in node_name.lower(),
+                        "has_test_in_path": "test" in node_name.lower(),
+                        "has_util_in_path": "util" in node_name.lower() or "helper" in node_name.lower() or "config" in node_name.lower() or "settings" in node_name.lower(),
+
+                        "path_depth": node_name.count("/"),
+
                         "file_role": node_data["file_role"]
                     })
 

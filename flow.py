@@ -119,6 +119,8 @@ def visualize(project_zip_folder_bytes: bytes):
     """
     analyzed_project_graph = extract_build_analyze(project_zip_folder_bytes)
 
+
+
 def guess_file_role(file_path: str, analyzer: CodeAnalyzer):
     """
     Guess file role based on file_path contents
@@ -134,9 +136,9 @@ def guess_file_role(file_path: str, analyzer: CodeAnalyzer):
         return "migration"
     elif "model" in file_path:
         return "model"
-    elif "view" in file_path or "controller" in file_path or "route" in file_path:
+    elif "view" in file_path or "controller" in file_path or "route" in file_path or "api" in file_path or "endpoint" in file_path or "handler" in file_path:
         return "view"
-    elif "util" in file_path or "helper" in file_path or "config" in file_path:
+    elif "util" in file_path or "helper" in file_path or "config" in file_path or "settings" in file_path:
         return "utility"
     else:
         return "other"
