@@ -1,8 +1,11 @@
 import networkx
+from networkx.algorithms.components import strongly_connected_components
+
 
 class GraphAnalyzer:
     def __init__(self, graph):
         self.graph = graph
+        self.pagerank_scores = networkx.pagerank(self.graph, alpha=0.85)
         self.execution_order_counter = 1
         self.execution_order_visited_edges = set()
 
@@ -18,16 +21,14 @@ class GraphAnalyzer:
         if not train:
             self.initialize_edges_attributes()
 
-
             for entry_node in entry_nodes:
                 self.mark_dependency_order(entry_node)
-
-
             for entry_node in entry_nodes:
                 self.mark_node_execution_order(entry_node)
 
-
             self.detect_circular_dependencies()
+
+        self.mark_node_pagerank_score()
 
         return self.graph
 
@@ -91,17 +92,30 @@ class GraphAnalyzer:
         """
         Use networkx "simple_cycles" to detect and lable circular imports
         """
+        strongly_connected_components = []
+        for i in networkx.strongly_connected_components(self.graph):
+            if len(i) > 1:
+                strongly_connected_components.append(i)
+
         cycle_count = 0
-        for cycle in networkx.simple_cycles(self.graph):
+        for component in strongly_connected_components:
             nodes_in_cycle = []
-            for node in cycle:
+            for node in component:
                 if self.graph.nodes[node]['type'] == "LocalFile":
                     nodes_in_cycle.append(node)
 
             if len(nodes_in_cycle) >= 2:
                 cycle_count += 1
-                for i in range(len(nodes_in_cycle)):
-                    source = nodes_in_cycle[i]
-                    target = nodes_in_cycle[(i + 1) % len(nodes_in_cycle)]
-                    if self.graph.has_edge(source, target):
-                        self.graph.edges[source, target]['has_circular_dependency'] = True
+                for node in nodes_in_cycle:
+                    for neighbor in self.graph.neighbors(node):
+                        if self.graph.neighbors(node):
+                            self.graph.edges[node, neighbor]['has_circular_dependency'] = True
+
+    def mark_node_pagerank_score(self):
+        """
+        Use networkx "pagerank" to give a score for each node that is based on how many files import this file
+        """
+        for node in self.graph.nodes:
+            self.graph.nodes[node]['pagerank_score'] = self.pagerank_scores[node]
+
+

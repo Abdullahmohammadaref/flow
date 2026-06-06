@@ -8,16 +8,43 @@ import requests
 from dotenv import load_dotenv
 
 class DatasetBuilder:
-    def __init__(self, number_of_repositories):
+    def __init__(self):
         load_dotenv()
         self.github_token = os.getenv("GITHUB_TOKEN")
         # Connect to GitHub api
         self.github_api = self.connect_to_github_api()
-        self.repository_analyzing_limit = number_of_repositories
-        self.currently_analyzed_repositories = 0
+        # self.files_analyzing_limit = number_of_files
+        # self.currently_analyzed_files = 0
         self.dataset_file_name = "dataset.csv"
         # Scrape repositories using GitHub api
-        self.scraped_repositories = self.github_api.search_repositories(query="language:python stars:>400")
+
+        #todo: change two lines below later
+        # self.scraped_repositories = self.github_api.search_repositories(query="language:python stars:>400")
+        self.scraped_repositories = [
+                                     self.github_api.get_repo("nsidnev/fastapi-realworld-example-app"),
+                                     self.github_api.get_repo("cookiecutter/cookiecutter-django"),
+                                     self.github_api.get_repo("psf/requests"),
+                                     self.github_api.get_repo("netbox-community/netbox"),
+                                     self.github_api.get_repo("getsentry/sentry"),
+
+                                     self.github_api.get_repo("lanchiang/strudel"),
+                                     self.github_api.get_repo("django/django"),
+                                     self.github_api.get_repo("encode/starlette"),
+                                     self.github_api.get_repo("wagtail/wagtail"),
+                                     self.github_api.get_repo("pallets/flask"),
+                                     self.github_api.get_repo("celery/celery"),
+                                     self.github_api.get_repo("ansible/ansible"),
+                                     self.github_api.get_repo("encode/django-rest-framework"),
+                                     self.github_api.get_repo("sqlalchemy/sqlalchemy"),
+                                     self.github_api.get_repo("pytest-dev/pytest"),
+                                     self.github_api.get_repo("pydantic/pydantic"),
+                                     self.github_api.get_repo("apache/airflow"),
+                                     self.github_api.get_repo("tiangolo/fastapi"),
+                                     self.github_api.get_repo("scrapy/scrapy"),
+                                     self.github_api.get_repo("python-poetry/poetry"),
+                                     self.github_api.get_repo("saleor/saleor"),
+                                    ]
+
 
     def connect_to_github_api(self):
         """
@@ -53,65 +80,79 @@ class DatasetBuilder:
         try:
             dataset = pandas.read_csv(self.dataset_file_name)
         except FileNotFoundError:
-            dataset = pandas.DataFrame(
-                columns=[
-                    "repository_name",
-                    "repository_url",
-                    "number_of_imports",
-                    "number_of_classes",
-                    "number_of_functions",
-                    "is_entry_point",
-                    "has_wait_state",
-                    "number_of_decorators",
-                    "file_role"
-                ]
-            )
+            columns = {
+                "relative_path": "string",
+                "file_role": "string",
+                "role_note": "string",
+                "file_domain": "string",
+                "repository_url": "string",
+                "number_of_imports": "Int64",
+                "number_of_external_imports": "Int64",
+                "number_of_internal_imports": "Int64",
+                "number_of_standard_imports": "Int64",
+                "number_of_classes": "Int64",
+                "number_of_functions": "Int64",
+                "is_entry_point": "Int64",
+                "has_wait_state": "Int64",
+                "number_of_decorators": "Int64",
+                "number_of_base_classes": "Int64",
+                "has_model_in_path": "Int64",
+                "has_view_in_path": "Int64",
+                "has_test_in_path": "Int64",
+                "has_util_in_path": "Int64",
+
+                "has_migration_in_path": "Int64",
+                "has_script_in_path": "Int64",
+                "has_middleware_in_path": "Int64",
+                "has_enum_in_path": "Int64",
+                "has_config_in_path": "Int64",
+
+                "path_depth": "Int64",
+                # "pagerank_score": "float64",
+                "functions_to_classes_ratio": "float64",
+                "external_import_ratio": "float64",
+                "code_complexity": "int64",
+            }
+            dataset = pandas.DataFrame(columns=list(columns.keys())).astype(columns)
+
         # Loop over repositories, skip already analyzed repositories, skip local files
         for repository in self.scraped_repositories:
-            if self.currently_analyzed_repositories >= self.repository_analyzing_limit:
-                break
+
+            #todo: remember to comment
+            # if self.currently_analyzed_files >= self.files_analyzing_limit:
+            #     break
+
+            # Skip already analyzed repositories
             if repository.url in set(dataset["repository_url"]):
+                print(f"{repository.url} have already been analyzed")
                 continue
             try:
                 # Analyze repository
                 analyzed_project_graph = analyzer(self.get_repository_zip_bytes(repository))
 
                 files_data = []
+
+                files_scraped_from_repo = 0
                 for node_name, node_data in analyzed_project_graph.nodes(data=True):
                     # Only include local files in the csv
+
+                    #todo: remember to comment
+                    # if files_scraped_from_repo == 50 or self.currently_analyzed_files >= self.files_analyzing_limit:
+                    #     break
+
                     if node_data["type"] != "LocalFile":
                         continue
 
-                    files_data.append({
-                        "repository_name": repository.full_name,
-                        "repository_url": repository.url,
+                    files_data.append(extract_features(node_name, node_data, repository.url))
 
-                        "number_of_imports": len(node_data["imports"]),
-                        "number_of_external_imports": list(node_data["imports"].values()).count("external_import"),
-                        "number_of_internal_imports": list(node_data["imports"].values()).count("internal_import"),
-                        "number_of_standard_imports": list(node_data["imports"].values()).count("standard_import"),
-                        
-                        "number_of_classes": len(node_data["classes"]),
-                        "number_of_functions": len(node_data["functions"]),
-                        "is_entry_point": node_data["is_entry_point"],
-                        "has_wait_state": node_data["has_wait_state"],
-                        "number_of_decorators": len(node_data["decorators"]),
-                        "number_of_base_classes": len(node_data.get("base_classes", [])),
+                    # todo: remember to comment
+                    # files_scraped_from_repo += 1
+                    # self.currently_analyzed_files += 1
 
-                        "has_model_in_path": "model" in node_name.lower(),
-                        "has_view_in_path": "view" in node_name.lower() or "controller" in node_name.lower() or "route" in node_name.lower() or "api" in node_name.lower() or "endpoint" in node_name.lower() or "handler" in node_name.lower(),
-                        "has_test_in_path": "test" in node_name.lower(),
-                        "has_util_in_path": "util" in node_name.lower() or "helper" in node_name.lower() or "config" in node_name.lower() or "settings" in node_name.lower(),
-
-                        "path_depth": node_name.count("/"),
-
-                        "file_role": node_data["file_role"]
-                    })
+                    print(f"Analyzed {repository.url}")
 
                 # Combine loaded csv file with new dataframe
                 dataset = pandas.concat([dataset, pandas.DataFrame(files_data)], ignore_index=True)
-                self.currently_analyzed_repositories += 1
-                print(f"Analyzed {self.currently_analyzed_repositories} out of {self.repository_analyzing_limit}")
 
             except Exception as exception:
                 print(f"Parsing {repository.full_name} failed: {exception}")
@@ -120,3 +161,41 @@ class DatasetBuilder:
         dataset.to_csv(self.dataset_file_name, index=False)
 
         return dataset
+
+def extract_features(node_name: str, node_data: dict, repository_url = ""):
+    return {
+            "relative_path": node_name,
+            "file_role": node_data["file_role"],
+            "role_note": node_data["role_note"],
+            "file_domain": node_data["file_domain"],
+            "repository_url": repository_url,
+
+            "number_of_imports": len(node_data["imports"]),
+            "number_of_external_imports": list(node_data["imports"].values()).count("external_import"),
+            "number_of_internal_imports": list(node_data["imports"].values()).count("internal_import"),
+            "number_of_standard_imports": list(node_data["imports"].values()).count("standard_import"),
+
+            "number_of_classes": len(node_data["classes"]),
+            "number_of_functions": len(node_data["functions"]),
+            "is_entry_point": int(node_data["is_entry_point"]),
+            "has_wait_state": int(node_data["has_wait_state"]),
+            "number_of_decorators": len(node_data["decorators"]),
+            "number_of_base_classes": len(node_data.get("base_classes", [])),
+
+            "has_model_in_path": int("model" in node_name.lower() or "schema" in node_name.lower()),
+            "has_view_in_path": int("view" in node_name.lower() or "controller" in node_name.lower() or "route" in node_name.lower() or "api" in node_name.lower() or "endpoint" in node_name.lower() or "handler" in node_name.lower()),
+            "has_test_in_path": int("test" in node_name.lower()),
+            "has_util_in_path": int("util" in node_name.lower() or "helper" in node_name.lower()),
+
+            "has_migration_in_path": int("migration" in node_name.lower()),
+            "has_config_in_path": int("conf" in node_name.lower() or "setting" in node_name.lower()),
+            "has_script_in_path": int("script" in node_name.lower() or "task" in node_name.lower()),
+            "has_middleware_in_path": int("middleware" in node_name.lower()),
+            "has_enum_in_path": int("enum" in node_name.lower() or "constant" in node_name.lower()),
+            
+            "path_depth": node_name.count("/"),
+            # "pagerank_score": node_data["pagerank_score"],
+            "functions_to_classes_ratio": len(node_data["functions"]) / len(node_data["classes"]) if len(node_data["classes"]) > 0 else 0.0,
+            "external_import_ratio": list(node_data["imports"].values()).count("external_import") / len(node_data["imports"]) if len(node_data["imports"]) > 0 else 0.0,
+            "code_complexity": len(node_data["decorators"]) + len(node_data.get("base_classes", [])) + (3 if node_data["has_wait_state"] else 0),
+        }

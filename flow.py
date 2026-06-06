@@ -2,11 +2,18 @@ import sys
 import zipfile
 import io
 import ast
+
+import pandas as pd
+
 from code_analyzer import CodeAnalyzer
 from graph_builder import build_graph
 from graph_analyzer import GraphAnalyzer
 from dataset_builder import DatasetBuilder
 from model_trainer import train_model
+
+from file_role_predictor import predict_files_roles
+import networkx
+
 
 
 def encode_zip(zip_folder_path: str):
@@ -35,9 +42,10 @@ def unzip_project(zip_folder_bytes: bytes):
     try:
         with zipfile.ZipFile(io.BytesIO(zip_folder_bytes)) as folder:
             files = {}
+
             for file_name in folder.namelist():
                 # Remove unwanted folders that contain .py files
-                if any(i in file_name for i in ["venv", "__pycache__", "migrations"]):
+                if any(i in file_name for i in ["venv", "__pycache__", "__version__.py", "__about__.py"]):
                     continue
                 if file_name.endswith(".py"):
                     files[file_name] = folder.read(file_name).decode("utf-8")
@@ -64,7 +72,16 @@ def analyze_project_data(project):
             # Visit only created "visit_nodeName" methods
             code_analyzer.visit(file_tree)
 
-
+            # Detect noisy files and skip them
+            if (
+                len(code_analyzer.imports) == 0
+                and len(code_analyzer.functions) == 0
+                and len(code_analyzer.classes) == 0
+                and len(list(code_analyzer.global_variables)) == 0
+                and len(list(code_analyzer.decorators)) == 0
+                and len(list(code_analyzer.inherited_classes)) == 0
+                ):
+                continue
             data[file_name] = {
                 "imports": code_analyzer.imports,
                 "functions": code_analyzer.functions,
@@ -77,7 +94,11 @@ def analyze_project_data(project):
 
                 "base_classes": list(code_analyzer.inherited_classes),
                 "global_variables": list(code_analyzer.global_variables),
-                "file_role": guess_file_role(file_name.lower(), code_analyzer)
+                # "file_role": guess_file_role(file_name.lower(), code_analyzer)
+                "file_role": None,
+                "role_note": None,
+                "file_domain": None
+
             }
         except SyntaxError:
             # Skip files with invalid python code
@@ -106,8 +127,11 @@ def extract_build_analyze(project_zip_folder_bytes: bytes):
     return analyzed_project_graph
 
 def visualize(project_zip_folder_bytes: bytes):
+    analyze(project_zip_folder_bytes)
+
+def analyze(project_zip_folder_bytes: bytes):
     """
-    Main function for handling all visualization steps in order by calling functions for the visualization process:
+    Main function for handling all analysis steps in order by calling functions for the visualization process:
     1- Unzipping project and extracting data using ast
     2- Build graph with networkx
     3- Further Analyze graph
@@ -118,48 +142,28 @@ def visualize(project_zip_folder_bytes: bytes):
     :return: a JSON project flow diagram that is ready for drawing/visualizing
     """
     analyzed_project_graph = extract_build_analyze(project_zip_folder_bytes)
+    # print(networkx.node_link_data(analyzed_project_graph))
+    analyzed_project_graph = predict_files_roles(analyzed_project_graph)
+
+    print(networkx.node_link_data(analyzed_project_graph))
 
 
-
-def guess_file_role(file_path: str, analyzer: CodeAnalyzer):
-    """
-    Guess file role based on file_path contents
-    :param: string lowercase file path
-    :param: CodeAnalyzer object
-    :return: string file role
-    """
-    if analyzer.is_entry_point or "manage.py" in file_path or "main.py" in file_path:
-        return "entry_point"
-    elif "test" in file_path:
-        return "test"
-    elif "migrations" in file_path:
-        return "migration"
-    elif "model" in file_path:
-        return "model"
-    elif "view" in file_path or "controller" in file_path or "route" in file_path or "api" in file_path or "endpoint" in file_path or "handler" in file_path:
-        return "view"
-    elif "util" in file_path or "helper" in file_path or "config" in file_path or "settings" in file_path:
-        return "utility"
-    else:
-        return "other"
-
-def train():
-    """
-    - Trains our model with new repositories each time this function is called.
-    - Saves train data in .pickle file.
-    """
-    dataset_builder = DatasetBuilder(int(sys.argv[2]) if len(sys.argv) > 2 else 20)
-    # pass needed function in build_dataset function as a parameter instead of importing it in dataset_builder.py to avoid circular imports
-    dataset = dataset_builder.build_dataset(extract_build_analyze)
-    train_model(dataset)
-    print("Model trained successfully")
 
 def main():
      if len(sys.argv) > 1:
         if sys.argv[1].lower() == "train":
-            train()
-        else:
-            visualize(encode_zip(sys.argv[1]))
+            train_model()
+            print("Model trained successfully")
+        if sys.argv[1].lower() == "build":
+            dataset_builder = DatasetBuilder()
+            # pass needed function in build_dataset function as a parameter instead of importing it in dataset_builder.py to avoid circular imports
+            dataset_builder.build_dataset(extract_build_analyze)
+            print("Dataset built successfully")
+        elif sys.argv[1].lower() == "visualize":
+            visualize(encode_zip(sys.argv[2]))
+        elif sys.argv[1].lower() == "analyze":
+            analyze(encode_zip(sys.argv[2]))
+            print("Project analysis complete")
      else:
         print("No argument provided")
 
