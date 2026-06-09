@@ -57,7 +57,7 @@ class GraphAnalyzer:
 
     def mark_node_execution_order(self, parent_node):
         """
-        A depth first graph traversal algorithm to order edges based on runtime import-time execution order.
+        A depth first graph traversal algorithm to order edges based on runtime import execution order.
         :param: String name of a parent node
         """
         for child_node in sorted(self.graph.successors(parent_node)):

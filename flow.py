@@ -97,8 +97,7 @@ def analyze_project_data(project):
                 # "file_role": guess_file_role(file_name.lower(), code_analyzer)
                 "file_role": None,
                 "role_note": None,
-                "file_domain": None
-
+                "domain": None
             }
         except SyntaxError:
             # Skip files with invalid python code
@@ -126,9 +125,6 @@ def extract_build_analyze(project_zip_folder_bytes: bytes):
 
     return analyzed_project_graph
 
-def visualize(project_zip_folder_bytes: bytes):
-    analyze(project_zip_folder_bytes)
-
 def analyze(project_zip_folder_bytes: bytes):
     """
     Main function for handling all analysis steps in order by calling functions for the visualization process:
@@ -146,6 +142,7 @@ def analyze(project_zip_folder_bytes: bytes):
     analyzed_project_graph = predict_files_roles(analyzed_project_graph)
 
     print(networkx.node_link_data(analyzed_project_graph))
+    return networkx.node_link_data(analyzed_project_graph)
 
 
 
@@ -159,8 +156,6 @@ def main():
             # pass needed function in build_dataset function as a parameter instead of importing it in dataset_builder.py to avoid circular imports
             dataset_builder.build_dataset(extract_build_analyze)
             print("Dataset built successfully")
-        elif sys.argv[1].lower() == "visualize":
-            visualize(encode_zip(sys.argv[2]))
         elif sys.argv[1].lower() == "analyze":
             analyze(encode_zip(sys.argv[2]))
             print("Project analysis complete")

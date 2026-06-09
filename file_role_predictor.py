@@ -8,13 +8,13 @@ def predict_files_roles(analyzed_project_graph):
     :param: analyzed networkx project graph
     :return: analyzed networkx project graph with predicted file roles
     """
-    with open("file_role_classifier.pkl", "rb") as pkl_file:
+    with open("random_forest_classifier.pkl", "rb") as pkl_file:
         random_forest_classifier_pipeline = pickle.load(pkl_file)
 
     for node_name, node_data in analyzed_project_graph.nodes(data=True):
         if node_data["type"] != "LocalFile":
             continue
-        prediction_probabilities = random_forest_classifier_pipeline.predict_proba(pandas.DataFrame([extract_features(node_name, node_data)]).drop(columns=["relative_path", "repository_url", "file_role", "role_note", "file_domain"]))[0]
+        prediction_probabilities = random_forest_classifier_pipeline.predict_proba(pandas.DataFrame([extract_features(node_name, node_data)]).drop(columns=["relative_path", "repository_url", "file_role", "role_note", "domain"]))[0]
         best_score = max(prediction_probabilities)
 
         if best_score >= 0.55:

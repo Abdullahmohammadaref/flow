@@ -16,35 +16,8 @@ class DatasetBuilder:
         # self.files_analyzing_limit = number_of_files
         # self.currently_analyzed_files = 0
         self.dataset_file_name = "dataset.csv"
-        # Scrape repositories using GitHub api
-
-        #todo: change two lines below later
-        # self.scraped_repositories = self.github_api.search_repositories(query="language:python stars:>400")
-        self.scraped_repositories = [
-                                     self.github_api.get_repo("nsidnev/fastapi-realworld-example-app"),
-                                     self.github_api.get_repo("cookiecutter/cookiecutter-django"),
-                                     self.github_api.get_repo("psf/requests"),
-                                     self.github_api.get_repo("netbox-community/netbox"),
-                                     self.github_api.get_repo("getsentry/sentry"),
-
-                                     self.github_api.get_repo("lanchiang/strudel"),
-                                     self.github_api.get_repo("django/django"),
-                                     self.github_api.get_repo("encode/starlette"),
-                                     self.github_api.get_repo("wagtail/wagtail"),
-                                     self.github_api.get_repo("pallets/flask"),
-                                     self.github_api.get_repo("celery/celery"),
-                                     self.github_api.get_repo("ansible/ansible"),
-                                     self.github_api.get_repo("encode/django-rest-framework"),
-                                     self.github_api.get_repo("sqlalchemy/sqlalchemy"),
-                                     self.github_api.get_repo("pytest-dev/pytest"),
-                                     self.github_api.get_repo("pydantic/pydantic"),
-                                     self.github_api.get_repo("apache/airflow"),
-                                     self.github_api.get_repo("tiangolo/fastapi"),
-                                     self.github_api.get_repo("scrapy/scrapy"),
-                                     self.github_api.get_repo("python-poetry/poetry"),
-                                     self.github_api.get_repo("saleor/saleor"),
-                                    ]
-
+        # Scrape selected repositories using GitHub api
+        self.scraped_repositories = pandas.read_csv("repositories.csv").to_dict("records")
 
     def connect_to_github_api(self):
         """
@@ -84,7 +57,7 @@ class DatasetBuilder:
                 "relative_path": "string",
                 "file_role": "string",
                 "role_note": "string",
-                "file_domain": "string",
+                "domain": "string",
                 "repository_url": "string",
                 "number_of_imports": "Int64",
                 "number_of_external_imports": "Int64",
@@ -116,12 +89,10 @@ class DatasetBuilder:
             dataset = pandas.DataFrame(columns=list(columns.keys())).astype(columns)
 
         # Loop over repositories, skip already analyzed repositories, skip local files
-        for repository in self.scraped_repositories:
+        for repository_data in self.scraped_repositories:
 
-            #todo: remember to comment
-            # if self.currently_analyzed_files >= self.files_analyzing_limit:
-            #     break
-
+            repository = self.github_api.get_repo(repository_data["repository_full_name"])
+            domain = repository_data["domain"]
             # Skip already analyzed repositories
             if repository.url in set(dataset["repository_url"]):
                 print(f"{repository.url} have already been analyzed")
@@ -135,21 +106,12 @@ class DatasetBuilder:
                 files_scraped_from_repo = 0
                 for node_name, node_data in analyzed_project_graph.nodes(data=True):
                     # Only include local files in the csv
-
-                    #todo: remember to comment
-                    # if files_scraped_from_repo == 50 or self.currently_analyzed_files >= self.files_analyzing_limit:
-                    #     break
-
                     if node_data["type"] != "LocalFile":
                         continue
 
-                    files_data.append(extract_features(node_name, node_data, repository.url))
+                    files_data.append(extract_features(node_name, node_data, repository.url, domain))
 
-                    # todo: remember to comment
-                    # files_scraped_from_repo += 1
-                    # self.currently_analyzed_files += 1
-
-                    print(f"Analyzed {repository.url}")
+                print(f"Analyzed {repository.url}")
 
                 # Combine loaded csv file with new dataframe
                 dataset = pandas.concat([dataset, pandas.DataFrame(files_data)], ignore_index=True)
@@ -162,12 +124,12 @@ class DatasetBuilder:
 
         return dataset
 
-def extract_features(node_name: str, node_data: dict, repository_url = ""):
+def extract_features(node_name: str, node_data: dict, repository_url = "", domain = ""):
     return {
             "relative_path": node_name,
             "file_role": node_data["file_role"],
             "role_note": node_data["role_note"],
-            "file_domain": node_data["file_domain"],
+            "domain": domain,
             "repository_url": repository_url,
 
             "number_of_imports": len(node_data["imports"]),
