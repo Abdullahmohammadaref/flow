@@ -10,7 +10,7 @@ from scipy.stats import randint
 from sklearn.pipeline import Pipeline
 
 
-def stratify_and_balance_dataset(dataframe: pandas.DataFrame = pandas.read_csv("dataset.csv"), target_column: str = "file_role", unique_group_column: str = "repository_url", max_repository_percentage: float = 0.4, sample_size_multiplier: int = 3 , random_state: int = 20, output_dataframe_name: str = "stratified_and_balanced_dataset.csv"):
+def stratify_and_balance_dataset(dataframe: pandas.DataFrame = pandas.read_csv("dataset.csv"), target_column: str = "file_role", unique_group_column: str = "repository_url", max_repository_percentage: float = 0.4, sample_size_multiplier: int = 3, random_state: int = 20, output_dataframe_name: str = "stratified_and_balanced_dataset.csv"):
     """
     Addresses class imbalance domain leakage with:
     1- Stratifying:

@@ -1,4 +1,1 @@
-flow_venv
-.env
-/dataset.csv
-*.pkl
+.idea
