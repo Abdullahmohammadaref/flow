@@ -10,7 +10,7 @@ from scipy.stats import randint
 from sklearn.pipeline import Pipeline
 
 
-def stratify_and_balance_dataset(dataframe: pandas.DataFrame = pandas.read_csv("dataset.csv"), target_column: str = "file_role", unique_group_column: str = "repository_url", max_repository_percentage: float = 0.4, sample_size_multiplier: int = 3, random_state: int = 20, output_dataframe_name: str = "stratified_and_balanced_dataset.csv"):
+def stratify_and_balance_dataset(dataframe: pandas.DataFrame = pandas.read_csv("dataset_files/dataset.csv"), target_column: str = "file_role", unique_group_column: str = "repository_url", max_repository_percentage: float = 0.4, sample_size_multiplier: int = 3, random_state: int = 20, output_dataframe_name: str = "stratified_and_balanced_dataset.csv"):
     """
     Addresses class imbalance domain leakage with:
     1- Stratifying:
@@ -55,11 +55,11 @@ def stratify_and_balance_dataset(dataframe: pandas.DataFrame = pandas.read_csv("
     # Transform rows into pandas dataframe, shuffle, and reset index
     stratified_and_balanced_dataframe = pandas.concat(stratified_and_balanced_data).sample(frac=1, random_state=random_state).reset_index(drop=True)
     # Write the `stratified_and_balanced_dataframe` in a CSV file in the case of further usage.
-    stratified_and_balanced_dataframe.to_csv(output_dataframe_name, index=False)
+    stratified_and_balanced_dataframe.to_csv(f"dataset_files/{output_dataframe_name}", index=False)
 
     return stratified_and_balanced_dataframe
 
-def train_model(dataframe: pandas.DataFrame = pandas.read_csv("dataset.csv")):
+def train_model(dataframe: pandas.DataFrame = pandas.read_csv("dataset_files/dataset.csv")):
     """
     A Machine learning pipeline to train a classification RandomForestClassifier model to predict file roles accurately then Saves train data in .pickle file.
     """
@@ -185,7 +185,7 @@ def train_model(dataframe: pandas.DataFrame = pandas.read_csv("dataset.csv")):
         print(confusion_matrix(test_data_targets, test_data_targets_prediction_results))
 
         # Saving classifier model into a .pkl file
-        with open(configuration["pkl_file_name"], "wb") as classifier:
+        with open(f"ml_models/{configuration["pkl_file_name"]}", "wb") as classifier:
             pickle.dump(grid_search, classifier)
 
 

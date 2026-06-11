@@ -90,7 +90,7 @@ class GraphAnalyzer:
 
     def detect_circular_dependencies(self):
         """
-        Use networkx "simple_cycles" to detect and lable circular imports
+        Use strongly_connected_components to detect and lable circular imports
         """
         strongly_connected_components = []
         for i in networkx.strongly_connected_components(self.graph):

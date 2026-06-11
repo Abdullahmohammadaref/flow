@@ -1,0 +1,23 @@
+repository_full_name,domain
+nsidnev/fastapi-realworld-example-app,Demo FastAPI Application
+cookiecutter/cookiecutter-django,Developer Tools
+psf/requests,HTTP Client
+netbox-community/netbox,Network Management
+getsentry/sentry,Application Monitoring
+django/django,Backend Framewrok Library
+encode/starlette
+wagtail/wagtail,Django application for content management
+pallets/flask,Web framework
+celery/celery
+ansible/ansible
+encode/django-rest-framework
+sqlalchemy/sqlalchemy
+pytest-dev/pytest
+pydantic/pydantic
+apache/airflow
+tiangolo/fastapi
+scrapy/scrapy
+python-poetry/poetry
+saleor/saleor,E-commerce Django Application
+lanchiang/strudel,Classifying verbose CSV files structure
+lanchiang/AggreCol,Algorithm to detect aggregations in verbose CSV files

@@ -8,7 +8,7 @@ def predict_files_roles(analyzed_project_graph):
     :param: analyzed networkx project graph
     :return: analyzed networkx project graph with predicted file roles
     """
-    with open("random_forest_classifier.pkl", "rb") as pkl_file:
+    with open("ml_models/logistic_regression_classifier.pkl", "rb") as pkl_file:
         random_forest_classifier_pipeline = pickle.load(pkl_file)
 
     for node_name, node_data in analyzed_project_graph.nodes(data=True):

@@ -15,9 +15,9 @@ class DatasetBuilder:
         self.github_api = self.connect_to_github_api()
         # self.files_analyzing_limit = number_of_files
         # self.currently_analyzed_files = 0
-        self.dataset_file_name = "dataset.csv"
+        self.dataset_file_name = "dataset_files/dataset.csv"
         # Scrape selected repositories using GitHub api
-        self.scraped_repositories = pandas.read_csv("repositories.csv").to_dict("records")
+        self.scraped_repositories = pandas.read_csv("dataset_files/repositories.csv").to_dict("records")
 
     def connect_to_github_api(self):
         """
