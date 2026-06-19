@@ -48,7 +48,8 @@ def unzip_project(zip_folder_bytes: bytes):
                 if any(i in file_name for i in ["venv", "__pycache__", "__version__.py", "__about__.py"]):
                     continue
                 if file_name.endswith(".py"):
-                    files[file_name] = folder.read(file_name).decode("utf-8")
+                    stripped_file_name = file_name.split("/", 1)[1] if "/" in file_name else file_name
+                    files[stripped_file_name] = folder.read(file_name).decode("utf-8")
             return files
     except zipfile.BadZipFile:
         print("Couldn't unzip project folder: the zip file is corrupt")
@@ -96,8 +97,6 @@ def analyze_project_data(project):
                 "global_variables": list(code_analyzer.global_variables),
                 # "file_role": guess_file_role(file_name.lower(), code_analyzer)
                 "file_role": None,
-                "role_note": None,
-                "domain": None
             }
         except SyntaxError:
             # Skip files with invalid python code
@@ -151,10 +150,13 @@ def main():
         if sys.argv[1].lower() == "train":
             train_model()
             print("Model trained successfully")
-        if sys.argv[1].lower() == "build":
+        elif sys.argv[1].lower() == "build":
             dataset_builder = DatasetBuilder()
-            # pass needed function in build_dataset function as a parameter instead of importing it in dataset_builder.py to avoid circular imports
-            dataset_builder.build_dataset(extract_build_analyze)
+            if len(sys.argv) > 2 and sys.argv[2].lower() in ["current", "update"]:
+                # pass needed function in build_dataset function as a parameter instead of importing it in dataset_builder.py to avoid circular imports
+                dataset_builder.build_dataset(extract_build_analyze, build_mode=sys.argv[2].lower())
+            else:
+                dataset_builder.build_dataset(extract_build_analyze)
             print("Dataset built successfully")
         elif sys.argv[1].lower() == "analyze":
             analyze(encode_zip(sys.argv[2]))

@@ -1,23 +1,27 @@
-repository_full_name,domain
-nsidnev/fastapi-realworld-example-app,Demo FastAPI Application
-cookiecutter/cookiecutter-django,Developer Tools
-psf/requests,HTTP Client
-netbox-community/netbox,Network Management
-getsentry/sentry,Application Monitoring
-django/django,Backend Framewrok Library
-encode/starlette
-wagtail/wagtail,Django application for content management
-pallets/flask,Web framework
-celery/celery
-ansible/ansible
-encode/django-rest-framework
-sqlalchemy/sqlalchemy
-pytest-dev/pytest
-pydantic/pydantic
-apache/airflow
-tiangolo/fastapi
-scrapy/scrapy
-python-poetry/poetry
-saleor/saleor,E-commerce Django Application
-lanchiang/strudel,Classifying verbose CSV files structure
-lanchiang/AggreCol,Algorithm to detect aggregations in verbose CSV files
+repository_full_name,domain,commit_hash
+nsidnev/fastapi-realworld-example-app,Demo FastAPI Application,029eb77
+cookiecutter/cookiecutter-django,Developer Tools,55b5e44
+psf/requests,HTTP Client,cd90742
+netbox-community/netbox,Network Management,fd35c36
+getsentry/sentry,Application Monitoring,671a63a
+django/django,Backend Framewrok Library,8c2d3dc
+Kludex/starlette,,073fd7b
+wagtail/wagtail,Django application for content management,e4f859a
+pallets/flask,Web framework,36e4a82
+celery/celery,,aa4c3b1
+ansible/ansible,,8b062bb
+encode/django-rest-framework,,156bd5d
+sqlalchemy/sqlalchemy,,5631464
+pytest-dev/pytest,,3422c67
+pydantic/pydantic,,abed10d
+apache/airflow,,080ad50
+fastapi/fastapi,,1b68e37
+scrapy/scrapy,,13c1c1f
+python-poetry/poetry,,aab3194
+saleor/saleor,E-commerce Django Application,4e97fde
+lanchiang/strudel,Classifying verbose CSV files structure,765570b
+lanchiang/AggreCol,Algorithm to detect aggregations in verbose CSV files,7143b31
+invoke-ai/InvokeAI,Local image generation model,42c7e73
+Alex-Lekov/ml-fastapi,Machine Learning Operations,5ebe0c3
+mikethwolff/ML-FastAPI,Predict if income exceeds 50k,0e9fc0d
+bentoml/BentoML,ML framework for serving ai models,73c4dbe

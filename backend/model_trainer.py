@@ -67,6 +67,7 @@ def train_model(dataframe: pandas.DataFrame = pandas.read_csv("dataset_files/dat
 
     # Drop null rows with no labeled file_role
     dataframe = dataframe.dropna(subset=["file_role"])
+    print(dataframe['file_role'].value_counts())
 
     # Prepare dataset to resolve Data Starvation and Domain Overfitting
     dataframe = stratify_and_balance_dataset(dataframe=dataframe, max_repository_percentage=0.4, sample_size_multiplier=3)
@@ -92,7 +93,7 @@ def train_model(dataframe: pandas.DataFrame = pandas.read_csv("dataset_files/dat
     print(dataframe['file_role'].value_counts())
 
     ## Separate data into train and test data
-    train_data_features, test_data_features, train_data_targets, test_data_targets = train_test_split(dataframe.drop(columns=["relative_path", "repository_url", "file_role", "role_note","domain"]), dataframe["file_role"], test_size=0.2, random_state=20, stratify=dataframe["file_role"])
+    train_data_features, test_data_features, train_data_targets, test_data_targets = train_test_split(dataframe.drop(columns=["file_url", "relative_path", "commit_hash", "repository_url", "file_role", "role_note", "domain", "repository_full_name", "github_status"]), dataframe["file_role"], test_size=0.2, random_state=20, stratify=dataframe["file_role"])
 
     # Feature engineering
     ## Separate categorical data from numerical data
