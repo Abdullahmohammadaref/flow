@@ -3,6 +3,9 @@ import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } 
 interface SimulationNode { id: string; type: string; x: number; y: number }
 interface SimulationLink { source: string; target: string }
 
+// Calculates mathematically using d3-force where to place the nodes on the canvas so they don't
+// stack ontop of each other by default behavior
+// connected nodes position effect the calculation and
 export function computeLayout(
   rawNodes: { id: string; type: string }[],
   rawEdges: { source: string; target: string }[],

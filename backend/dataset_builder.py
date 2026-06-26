@@ -101,7 +101,6 @@ class DatasetBuilder:
                 "code_complexity": "int64",
                 "commit_hash": "string",
 
-                # --- NEW COLUMNS ---
                 "has_route_in_path": "Int64",
                 "has_url_in_path": "Int64",
                 "has_command_in_path": "Int64",
@@ -275,9 +274,9 @@ def extract_features(node_name: str, node_data: dict, repository_url: str = None
             "has_script_in_path": int("script" in node_name.lower() or "task" in node_name.lower()),
             "has_middleware_in_path": int("middleware" in node_name.lower()),
             "has_enum_in_path": int("enum" in node_name.lower() or "constant" in node_name.lower()),
-            
+
             "path_depth": node_name.count("/"),
-            # "pagerank_score": node_data["pagerank_score"],
+            # "pagerank_score": node_data["pagerank_score"], # removed temporarily because it is suspected to mislead the model
             "functions_to_classes_ratio": len(node_data["functions"]) / len(node_data["classes"]) if len(node_data["classes"]) > 0 else 0.0,
             "external_import_ratio": list(node_data["imports"].values()).count("external_import") / len(node_data["imports"]) if len(node_data["imports"]) > 0 else 0.0,
             "code_complexity": len(node_data["decorators"]) + len(node_data.get("base_classes", [])) + (3 if node_data["has_wait_state"] else 0),
@@ -291,7 +290,6 @@ def extract_features(node_name: str, node_data: dict, repository_url: str = None
             "has_core_in_path": int("core" in node_name.lower()),
             "has_ml_in_path": int("predict" in node_name.lower() or "/ml/" in node_name.lower() or "train" in node_name.lower()),
 
-            # --- FILENAME-ONLY FEATURES ---
             "has_setting_in_name": int("setting" in filename),
             "has_conf_in_name": int("conf" in filename),
             "has_main_in_name": int("main" in filename or filename == "__main__"),
@@ -302,43 +300,38 @@ def extract_features(node_name: str, node_data: dict, repository_url: str = None
             "has_util_in_name": int("util" in filename or "helper" in filename),
             "has_migration_prefix_in_name": int(len(filename) >= 4 and filename[:4].isdigit() and filename[:2] == "00"),
 
-            # --- IMPORT NAME SIGNALS ---
-            "imports_testing_library": int(any(k in all_import_names for k in ["pytest", "unittest", "mock", "fixture", "testcase"])),
-            "imports_db_orm": int(any(k in all_import_names for k in ["models", "sqlalchemy", "peewee", "tortoise", "mongoengine"])),
+            "imports_testing_library": int(any(keyword in all_import_names for keyword in ["pytest", "unittest", "mock", "fixture", "testcase"])),
+            "imports_db_orm": int(any(keyword in all_import_names for keyword in ["models", "sqlalchemy", "peewee", "tortoise", "mongoengine"])),
             "imports_enum_lib": int("enum" in all_import_names),
-            "imports_cli_lib": int(any(k in all_import_names for k in ["click", "typer", "argparse", "optparse", "fire"])),
-            "imports_http_framework": int(any(k in all_import_names for k in ["fastapi", "flask", "django", "starlette", "aiohttp", "tornado"])),
+            "imports_cli_lib": int(any(keyword in all_import_names for keyword in ["click", "typer", "argparse", "optparse", "fire"])),
+            "imports_http_framework": int(any(keyword in all_import_names for keyword in ["fastapi", "flask", "django", "starlette", "aiohttp", "tornado"])),
             "imports_migration_lib": int("migrations" in all_import_names),
-            "imports_ml_lib": int(any(k in all_import_names for k in ["sklearn", "tensorflow", "torch", "keras", "xgboost", "lightgbm"])),
-            "imports_config_lib": int(any(k in all_import_names for k in["pydantic", "dataclasses", "environ", "dotenv", "configparser", "dynaconf"])),
+            "imports_ml_lib": int(any(keyword in all_import_names for keyword in ["sklearn", "tensorflow", "torch", "keras", "xgboost", "lightgbm"])),
+            "imports_config_lib": int(any(keyword in all_import_names for keyword in["pydantic", "dataclasses", "environ", "dotenv", "configparser", "dynaconf"])),
 
-            # --- INHERITANCE SIGNALS ---
             "inherits_model_class": int("model" in all_base_classes),
-            "inherits_view_class": int(any(k in all_base_classes for k in ["view", "viewset", "apiview", "genericview"])),
+            "inherits_view_class": int(any(keyword in all_base_classes for keyword in ["view", "viewset", "apiview", "genericview"])),
             "inherits_serializer_class": int("serializer" in all_base_classes),
-            "inherits_enum_class": int(any(k in all_base_classes for k in ["enum", "intenum", "strenum", "flag"])),
+            "inherits_enum_class": int(any(keyword in all_base_classes for keyword in ["enum", "intenum", "strenum", "flag"])),
             "inherits_migration_class": int("migration" in all_base_classes),
-            "inherits_test_class": int(any(k in all_base_classes for k in ["testcase", "testmixin"])),
+            "inherits_test_class": int(any(keyword in all_base_classes for keyword in ["testcase", "testmixin"])),
             "inherits_middleware_class": int("middleware" in all_base_classes),
-            "inherits_exception_class": int(any(k in all_base_classes for k in ["exception", "error"])),
+            "inherits_exception_class": int(any(keyword in all_base_classes for keyword in ["exception", "error"])),
 
-            # --- DECORATOR SIGNALS ---
-            "has_cli_decorator": int(any(k in d.lower() for d in node_data.get("decorators", []) for k in ["command", "group", "option", "argument"])),
-            "has_route_decorator": int(any(k in d.lower() for d in node_data.get("decorators", []) for k in ["route", "get", "post", "put", "delete", "patch"])),
-            "has_test_decorator": int(any(k in d.lower() for d in node_data.get("decorators", []) for k in ["pytest", "mark", "fixture", "parametrize"])),
-            "has_dataclass_decorator": int(any("dataclass" in d.lower() for d in node_data.get("decorators", []))),
+            "has_cli_decorator": int(any(keyword in decorator.lower() for decorator in node_data.get("decorators", []) for keyword in ["command", "group", "option", "argument"])),
+            "has_route_decorator": int(any(keyword in decorator.lower() for decorator in node_data.get("decorators", []) for keyword in ["route", "get", "post", "put", "delete", "patch"])),
+            "has_test_decorator": int(any(keyword in decorator.lower() for decorator in node_data.get("decorators", []) for keyword in ["pytest", "mark", "fixture", "parametrize"])),
+            "has_dataclass_decorator": int(any("dataclass" in decorator.lower() for decorator in node_data.get("decorators", []))),
 
-            # --- FUNCTION/CLASS NAME SIGNALS ---
-            "has_test_prefix_in_names": int(any(f.startswith("test_") for f in node_data.get("functions", []))),
-            "has_http_method_in_names": int(any(f.lower() in ["get", "post", "put", "delete", "patch"] for f in node_data.get("functions", []))),
-            "has_setup_teardown_in_names": int(any(k in all_names for k in ["setup", "teardown", "setupclass"])),
+            "has_test_prefix_in_names": int(any(function.startswith("test_") for function in node_data.get("functions", []))),
+            "has_http_method_in_names": int(any(function.lower() in ["get", "post", "put", "delete", "patch"] for function in node_data.get("functions", []))),
+            "has_setup_teardown_in_names": int(any(keyword in all_names for keyword in ["setup", "teardown", "setupclass"])),
             "ratio_test_functions": (
-                sum(1 for f in node_data.get("functions", []) if f.startswith("test_")) / len(
+                sum(1 for function in node_data.get("functions", []) if function.startswith("test_")) / len(
                     node_data.get("functions", []))
                 if len(node_data.get("functions", [])) > 0 else 0.0
             ),
-            "has_migrate_func_in_names": int(any(k in all_names for k in ["migrations", "runsql", "runpython"])),
+            "has_migrate_func_in_names": int(any(keyword in all_names for keyword in ["migrations", "runsql", "runpython"])),
 
-            # --- CROSS-FILE SIGNAL ---
             "import_count": node_data["imports_count"],
         }

@@ -14,6 +14,7 @@ const nodeTypes: NodeTypes = {
   entityNode: EntityNode,
 }
 
+// Other node choices that are kept invisible checkbox is clicked
 const LAYERS = ['libraries', 'functions', 'classes', 'decorators', 'globals'] as const
 type Layer = (typeof LAYERS)[number]
 
@@ -34,6 +35,7 @@ function GraphInner({ raw }: { raw: RawGraph }) {
   const [focusId, setFocusId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
+  // Search for a specific node id with string matching
   function searchNode(query: string) {
     setSearch(query)
     if (!query) return
@@ -43,7 +45,7 @@ function GraphInner({ raw }: { raw: RawGraph }) {
     }
   }
 
-  // Recompute visible nodes/edges when layers change
+
   const { visibleNodes, visibleEdges } = useMemo(() => {
     const visible_nodes: Node[] = [...full.fileNodes]
     const visible_edges: Edge[] = [...full.fileEdges]
@@ -55,7 +57,7 @@ function GraphInner({ raw }: { raw: RawGraph }) {
     return { visibleNodes: visible_nodes, visibleEdges: visible_edges }
   }, [full, layers])
 
-  // Compute layout and set nodes/edges whenever visible set changes
+
   useEffect(() => {
     const positions = computeLayout(
       visibleNodes.map(node => ({ id: node.id, type: node.type ?? 'fileNode' })),
@@ -71,7 +73,7 @@ function GraphInner({ raw }: { raw: RawGraph }) {
     )
     setEdges(visibleEdges)
 
-    // fitView after React Flow has measured the new nodes
+    // Make all the nodes shown on the screen again when additional nodes appear
 
     setTimeout(() => fitView({ padding: 0.15 }), 50)
 
@@ -81,7 +83,7 @@ function GraphInner({ raw }: { raw: RawGraph }) {
     setLayers(prev => ({ ...prev, [layer]: !prev[layer] }))
   }
 
-  // Dim everything except the clicked node and its direct neighbors
+  // darkens the color and lowers transparancy of other node to focus on selected node and its connections
   function focusNode(id: string | null) {
     setFocusId(id)
     setNodes(nodes =>
