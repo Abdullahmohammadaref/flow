@@ -8,6 +8,8 @@ from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassif
 import pickle
 from scipy.stats import randint
 from sklearn.pipeline import Pipeline
+import seaborn
+import matplotlib.pyplot as plt
 
 
 def stratify_and_balance_dataset(dataframe: pandas.DataFrame = pandas.read_csv("dataset_files/dataset.csv"), target_column: str = "file_role", unique_group_column: str = "repository_url", max_repository_percentage: float = 0.4, sample_size_multiplier: int = 3, random_state: int = 20, output_dataframe_name: str = "stratified_and_balanced_dataset.csv"):
@@ -66,12 +68,12 @@ def train_model(dataframe: pandas.DataFrame = pandas.read_csv("dataset_files/dat
     # Data processing and splitting
 
     # Drop null rows with no labeled file_role
-    dataframe = dataframe.dropna(subset=["file_role"])
+    dataframe = dataframe.dropna(subset=dataframe.columns.difference(["role_note", "domain"]))
+    # dataframe = dataframe.dropna(subset=["file_role"])
     print(dataframe['file_role'].value_counts())
 
     # Prepare dataset to resolve Data Starvation and Domain Overfitting
     dataframe = stratify_and_balance_dataset(dataframe=dataframe, max_repository_percentage=0.4, sample_size_multiplier=3)
-
     # Prints how much role we got from each repository
     # Note: terminal text size might need to decrease in order to see the whole print
     repository_names = dataframe['repository_url'].str.replace('https://api.github.com/repos/', '', regex=False)
@@ -158,32 +160,52 @@ def train_model(dataframe: pandas.DataFrame = pandas.read_csv("dataset_files/dat
 
         print(f"Best parameters: {grid_search.best_params_}")
         print(f"Cross validation score: {grid_search.best_score_}")
-        print(f"Random forest classifier accuracy score: {grid_search.score(train_data_features, train_data_targets)}")
+        print(f"accuracy score: {grid_search.score(train_data_features, train_data_targets)}")
 
         #
         best_estimator = grid_search.best_estimator_
         classifier_step = best_estimator.named_steps["classifier"]
         features = best_estimator.named_steps["column_transformer"].get_feature_names_out()
         print(f"Best estimator: {classifier_step}")
-        if hasattr(classifier_step, "feature_importances_"):
-            features_importances = classifier_step.feature_importances_
-            for feature in range(len(features_importances)):
-                print(f"{features[feature]}: {features_importances[feature]}")
-        elif hasattr(classifier_step, "coef_"):
-            features_importances = classifier_step.coef_[0]
-            for feature in range(len(features_importances)):
-                print(f"{features[feature]}: {features_importances[feature]}")
-        else:
-            # LightGBM (Gradient Boosting) doesn't have feature importances
-            pass
+
+        ## plot feature importances and save it as a png file.
+        if hasattr(classifier_step, "feature_importances_") or hasattr(classifier_step, "coef_"):
+            features_importances = classifier_step.feature_importances_ if hasattr(classifier_step, "feature_importances_") else classifier_step.coef_[0]
+
+            clean_named_features = []
+            for feature in features:
+                clean_named_features.append(str(feature).replace("standard_scaler__", ""))
+
+            features_dataframe = pandas.DataFrame({'feature': clean_named_features, 'feature_importance': features_importances})
+
+            features_dataframe['absolute_feature_importance'] = features_dataframe['feature_importance'].abs()
+            features_dataframe = features_dataframe.sort_values(by='absolute_feature_importance', ascending=False)
+
+            plt.figure(figsize=(12, 16))
+            seaborn.barplot(x='feature_importance', y='feature', data=features_dataframe, palette='viridis', hue='feature', legend=False)
+            plt.title(f'Feature Importances: {model}', fontsize=20, pad=20)
+            plt.xlabel('Importance Score', fontsize=14, labelpad=20)
+            plt.ylabel('Feature', fontsize=14, labelpad=20)
+            plt.yticks(fontsize=10)
+            plt.savefig(f"plots/{model}_feature_importances.png", dpi=300, bbox_inches='tight')
+            plt.close()
 
         ## Classification report
         test_data_targets_prediction_results = grid_search.predict(test_data_features)
         print(classification_report(test_data_targets, test_data_targets_prediction_results))
 
-        ## Confusion matrix
-        print(pandas.crosstab(test_data_targets, test_data_targets_prediction_results).rename_axis(columns="Actual/Predicted", index=None))
-        print(confusion_matrix(test_data_targets, test_data_targets_prediction_results))
+        # Plot a confusion matrix and save it as a png file.
+        plt.figure(figsize=(15, 20))
+        seaborn.heatmap(confusion_matrix(test_data_targets, test_data_targets_prediction_results), annot=True, fmt='d', cmap='Blues', annot_kws={"size": 12}, xticklabels=grid_search.classes_, yticklabels=grid_search.classes_)
+        plt.title(f'Confusion Matrix: {model}', fontsize=20, pad=20)
+        plt.ylabel('Actual', fontsize=20, labelpad=20)
+        plt.xlabel('Predicted', fontsize=20, labelpad=20)
+
+        plt.xticks(rotation=45, ha='right', fontsize=12)
+        plt.yticks(fontsize=12)
+
+        plt.savefig(f"plots/{model}_confusion_matrix.png", dpi=300, bbox_inches='tight')
+        plt.close()
 
         # Saving classifier model into a .pkl file
         with open(f"ml_models/{configuration["pkl_file_name"]}", "wb") as classifier:

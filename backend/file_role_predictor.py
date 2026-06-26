@@ -14,7 +14,7 @@ def predict_files_roles(analyzed_project_graph):
     for node_name, node_data in analyzed_project_graph.nodes(data=True):
         if node_data["type"] != "LocalFile":
             continue
-        prediction_probabilities = random_forest_classifier_pipeline.predict_proba(pandas.DataFrame([extract_features(node_name, node_data)]).drop(columns=["relative_path", "repository_url", "file_role", "role_note", "domain"]))[0]
+        prediction_probabilities = random_forest_classifier_pipeline.predict_proba(pandas.DataFrame([extract_features(node_name, node_data)]).drop(columns=["file_url", "relative_path", "commit_hash", "repository_url", "file_role", "role_note", "domain", "repository_full_name", "github_status"]))[0]
         best_score = max(prediction_probabilities)
 
         if best_score >= 0.55:

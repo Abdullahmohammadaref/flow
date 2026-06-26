@@ -101,6 +101,55 @@ class DatasetBuilder:
                 "code_complexity": "int64",
                 "commit_hash": "string",
 
+                # --- NEW COLUMNS ---
+                "has_route_in_path": "Int64",
+                "has_url_in_path": "Int64",
+                "has_command_in_path": "Int64",
+                "has_interceptor_in_path": "Int64",
+                "has_type_in_path": "Int64",
+                "has_controller_in_path": "Int64",
+                "has_core_in_path": "Int64",
+                "has_ml_in_path": "Int64",
+                "has_setting_in_name": "Int64",
+                "has_conf_in_name": "Int64",
+                "has_main_in_name": "Int64",
+                "has_type_in_name": "Int64",
+                "has_route_in_name": "Int64",
+                "has_url_in_name": "Int64",
+                "has_view_in_name": "Int64",
+                "has_util_in_name": "Int64",
+                "has_migration_prefix_in_name": "Int64",
+
+                "imports_testing_library": "Int64",
+                "imports_db_orm": "Int64",
+                "imports_enum_lib": "Int64",
+                "imports_cli_lib": "Int64",
+                "imports_http_framework": "Int64",
+                "imports_migration_lib": "Int64",
+                "imports_ml_lib": "Int64",
+                "imports_config_lib": "Int64",
+                "inherits_model_class": "Int64",
+                "inherits_view_class": "Int64",
+                "inherits_serializer_class": "Int64",
+                "inherits_enum_class": "Int64",
+                "inherits_migration_class": "Int64",
+                "inherits_test_class": "Int64",
+                "inherits_middleware_class": "Int64",
+                "inherits_exception_class": "Int64",
+
+                "has_cli_decorator": "Int64",
+                "has_route_decorator": "Int64",
+                "has_test_decorator": "Int64",
+                "has_dataclass_decorator": "Int64",
+
+                "has_test_prefix_in_names": "Int64",
+                "has_http_method_in_names": "Int64",
+                "has_setup_teardown_in_names": "Int64",
+                "has_migrate_func_in_names": "Int64",
+
+                "ratio_test_functions": "float64",
+
+                "import_count": "Int64",
 
             }
             dataset = pandas.DataFrame(columns=list(columns.keys())).astype(columns)
@@ -124,7 +173,7 @@ class DatasetBuilder:
             if repository.full_name != repository_data["repository_full_name"]:
                 self.scraped_repositories.loc[self.scraped_repositories["repository_full_name"] == repository_data["repository_full_name"], "repository_full_name"] = repository.full_name
 
-            if not commit_hash:
+            if not commit_hash or pandas.isna(commit_hash):
                 commit_hash = repository.get_branch(repository.default_branch).commit.sha[:7]
                 self.scraped_repositories.loc[self.scraped_repositories["repository_full_name"] == repository.full_name, "commit_hash"] = commit_hash
 
@@ -188,7 +237,11 @@ class DatasetBuilder:
 
         return dataset
 
-def extract_features(node_name: str, node_data: dict, repository_url: str, domain: str, file_url: str, commit_hash: str, repository_name: str):
+def extract_features(node_name: str, node_data: dict, repository_url: str = None, domain: str = None, file_url: str = None, commit_hash: str = None, repository_name: str = None):
+    filename = node_name.split("/")[-1].lower()
+    all_import_names = " ".join(node_data["imports"].keys()).lower()
+    all_base_classes = " ".join(node_data.get("base_classes", [])).lower()
+    all_names = " ".join(node_data.get("functions", []) + node_data.get("classes", [])).lower()
     return {
             "relative_path": node_name,
             "file_role": None,
@@ -228,4 +281,64 @@ def extract_features(node_name: str, node_data: dict, repository_url: str, domai
             "functions_to_classes_ratio": len(node_data["functions"]) / len(node_data["classes"]) if len(node_data["classes"]) > 0 else 0.0,
             "external_import_ratio": list(node_data["imports"].values()).count("external_import") / len(node_data["imports"]) if len(node_data["imports"]) > 0 else 0.0,
             "code_complexity": len(node_data["decorators"]) + len(node_data.get("base_classes", [])) + (3 if node_data["has_wait_state"] else 0),
+
+            "has_route_in_path": int("route" in node_name.lower()),
+            "has_url_in_path": int("url" in node_name.lower()),
+            "has_command_in_path": int("command" in node_name.lower() or "cmd" in node_name.lower() or "cli" in node_name.lower()),
+            "has_interceptor_in_path": int("interceptor" in node_name.lower()),
+            "has_type_in_path": int("type" in node_name.lower()),
+            "has_controller_in_path": int("controller" in node_name.lower()),
+            "has_core_in_path": int("core" in node_name.lower()),
+            "has_ml_in_path": int("predict" in node_name.lower() or "/ml/" in node_name.lower() or "train" in node_name.lower()),
+
+            # --- FILENAME-ONLY FEATURES ---
+            "has_setting_in_name": int("setting" in filename),
+            "has_conf_in_name": int("conf" in filename),
+            "has_main_in_name": int("main" in filename or filename == "__main__"),
+            "has_type_in_name": int("type" in filename),
+            "has_route_in_name": int("route" in filename),
+            "has_url_in_name": int("url" in filename),
+            "has_view_in_name": int("view" in filename),
+            "has_util_in_name": int("util" in filename or "helper" in filename),
+            "has_migration_prefix_in_name": int(len(filename) >= 4 and filename[:4].isdigit() and filename[:2] == "00"),
+
+            # --- IMPORT NAME SIGNALS ---
+            "imports_testing_library": int(any(k in all_import_names for k in ["pytest", "unittest", "mock", "fixture", "testcase"])),
+            "imports_db_orm": int(any(k in all_import_names for k in ["models", "sqlalchemy", "peewee", "tortoise", "mongoengine"])),
+            "imports_enum_lib": int("enum" in all_import_names),
+            "imports_cli_lib": int(any(k in all_import_names for k in ["click", "typer", "argparse", "optparse", "fire"])),
+            "imports_http_framework": int(any(k in all_import_names for k in ["fastapi", "flask", "django", "starlette", "aiohttp", "tornado"])),
+            "imports_migration_lib": int("migrations" in all_import_names),
+            "imports_ml_lib": int(any(k in all_import_names for k in ["sklearn", "tensorflow", "torch", "keras", "xgboost", "lightgbm"])),
+            "imports_config_lib": int(any(k in all_import_names for k in["pydantic", "dataclasses", "environ", "dotenv", "configparser", "dynaconf"])),
+
+            # --- INHERITANCE SIGNALS ---
+            "inherits_model_class": int("model" in all_base_classes),
+            "inherits_view_class": int(any(k in all_base_classes for k in ["view", "viewset", "apiview", "genericview"])),
+            "inherits_serializer_class": int("serializer" in all_base_classes),
+            "inherits_enum_class": int(any(k in all_base_classes for k in ["enum", "intenum", "strenum", "flag"])),
+            "inherits_migration_class": int("migration" in all_base_classes),
+            "inherits_test_class": int(any(k in all_base_classes for k in ["testcase", "testmixin"])),
+            "inherits_middleware_class": int("middleware" in all_base_classes),
+            "inherits_exception_class": int(any(k in all_base_classes for k in ["exception", "error"])),
+
+            # --- DECORATOR SIGNALS ---
+            "has_cli_decorator": int(any(k in d.lower() for d in node_data.get("decorators", []) for k in ["command", "group", "option", "argument"])),
+            "has_route_decorator": int(any(k in d.lower() for d in node_data.get("decorators", []) for k in ["route", "get", "post", "put", "delete", "patch"])),
+            "has_test_decorator": int(any(k in d.lower() for d in node_data.get("decorators", []) for k in ["pytest", "mark", "fixture", "parametrize"])),
+            "has_dataclass_decorator": int(any("dataclass" in d.lower() for d in node_data.get("decorators", []))),
+
+            # --- FUNCTION/CLASS NAME SIGNALS ---
+            "has_test_prefix_in_names": int(any(f.startswith("test_") for f in node_data.get("functions", []))),
+            "has_http_method_in_names": int(any(f.lower() in ["get", "post", "put", "delete", "patch"] for f in node_data.get("functions", []))),
+            "has_setup_teardown_in_names": int(any(k in all_names for k in ["setup", "teardown", "setupclass"])),
+            "ratio_test_functions": (
+                sum(1 for f in node_data.get("functions", []) if f.startswith("test_")) / len(
+                    node_data.get("functions", []))
+                if len(node_data.get("functions", [])) > 0 else 0.0
+            ),
+            "has_migrate_func_in_names": int(any(k in all_names for k in ["migrations", "runsql", "runpython"])),
+
+            # --- CROSS-FILE SIGNAL ---
+            "import_count": node_data["imports_count"],
         }

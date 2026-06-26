@@ -14,6 +14,9 @@ from model_trainer import train_model
 from file_role_predictor import predict_files_roles
 import networkx
 
+from flask import Flask, jsonify
+from flask_cors import CORS
+
 
 
 def encode_zip(zip_folder_path: str):
@@ -120,7 +123,8 @@ def extract_build_analyze(project_zip_folder_bytes: bytes):
     # Step 3: Analyze graph
     graph_analyzer = GraphAnalyzer(project_graph)
 
-    analyzed_project_graph = graph_analyzer.analyze_graph(train=True) if len(sys.argv) > 2 else graph_analyzer.analyze_graph()
+    is_training = len(sys.argv) > 1 and sys.argv[1].lower() == "build"
+    analyzed_project_graph = graph_analyzer.analyze_graph(train=is_training)
 
     return analyzed_project_graph
 
@@ -159,8 +163,16 @@ def main():
                 dataset_builder.build_dataset(extract_build_analyze)
             print("Dataset built successfully")
         elif sys.argv[1].lower() == "analyze":
-            analyze(encode_zip(sys.argv[2]))
-            print("Project analysis complete")
+            analyzed_graph = analyze(encode_zip(sys.argv[2]))
+
+            app = Flask(__name__)
+            CORS(app)
+            print("Ensure frontend is running")
+            print("Visual graph will shortly be available at: http://localhost:5173") 
+            @app.route('/graph', methods=['GET'])
+            def get_graph():
+                return jsonify(analyzed_graph)
+            app.run(debug=False, port=5000)
      else:
         print("No argument provided")
 

@@ -29,6 +29,7 @@ class GraphAnalyzer:
             self.detect_circular_dependencies()
 
         self.mark_node_pagerank_score()
+        self.file_node_import_count()
 
         return self.graph
 
@@ -113,9 +114,18 @@ class GraphAnalyzer:
 
     def mark_node_pagerank_score(self):
         """
-        Use networkx "pagerank" to give a score for each node that is based on how many files import this file
+        Use networkx "pagerank" to give a score for each node that is based on how many nodes use this node
         """
         for node in self.graph.nodes:
             self.graph.nodes[node]['pagerank_score'] = self.pagerank_scores[node]
+
+    def file_node_import_count(self):
+        """
+        Calculates how many files have imported this each file
+        """
+        for node in self.graph.nodes:
+            if self.graph.nodes[node]['type'] == "LocalFile":
+                self.graph.nodes[node]['imports_count'] = self.graph.in_degree(node)
+
 
 
